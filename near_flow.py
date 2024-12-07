@@ -1,6 +1,30 @@
-
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 c = 0.16 #m
-V_inf = 24 #m/s
-Re = 2.46*10**5 #?????????
+q_inf = 335.7613443 #Pa
+p_s = 99495.54635 #Pa
+
+with open('raw_2d.txt', 'r') as f:
+    lines = f.readlines()
+data = [line.strip().split('\t') for line in lines[2:]]
+alphas = [float(row[2]) for row in data]
+delta_pbs = [float(row[3]) for row in data]      
+p_bars = [float(row[4]) for row in data]
+temps = [float(row[5]) for row in data]
+rpms = [float(row[6]) for row in data]
+rhos = [float(row[7]) for row in data]
+
+cps = []
+deli = []
+for a,b in zip(delta_pbs,p_bars):
+    delminbar = a - 100 * b
+    deli.append(delminbar)
+for c in deli:
+    cp = c / q_inf 
+    cps.append(cp)
+plt.plot(alphas, cps)
+plt.xlabel('alpha')
+plt.ylabel('Pressure coef')
+plt.title('cp vs alpha')
+plt.show()
