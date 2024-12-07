@@ -1,11 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 c = 0.16 #m
 q_inf = 335.7613443 #Pa
 p_s = 99495.54635 #Pa
 
-with open('raw_2d.txt', 'r') as f:
+PPS = pd.read_excel('DATA_ANALYSIS/PPS.xlsx', skiprows = 2, usecols = [1, 2], sheet_name = 1)
+PPS = PPS.to_numpy()
+print(PPS)
+
+
+with open('DATA_ANALYSIS/raw_2d.txt', 'r') as f:
     lines = f.readlines()
 data = [line.strip().split('\t') for line in lines[2:]]
 alphas = [float(row[2]) for row in data]
