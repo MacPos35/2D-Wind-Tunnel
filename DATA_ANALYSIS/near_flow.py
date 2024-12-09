@@ -78,7 +78,7 @@ def plot_cp_vs_position(angle, split_point=None):
     # Apply a transformation to the x-axis labels (divide by 100) and format with decimals
     current_ticks = plt.gca().get_xticks()
     plt.gca().set_xticklabels([f'{x/100:.1f}' for x in current_ticks])
-
+    plt.gca().invert_yaxis()
     plt.grid(True)
     
     # Add the legend to show the angle of attack
@@ -87,4 +87,4 @@ def plot_cp_vs_position(angle, split_point=None):
     plt.show()
 
 # Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees) and split point
-plot_cp_vs_position(5, split_point=25)  # Try changing the split_point value to test different splits
+plot_cp_vs_position(16, split_point=25)  # Try changing the split_point value to test different splits
