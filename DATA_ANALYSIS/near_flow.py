@@ -7,7 +7,7 @@ q_inf = 335.7613443  # Free-stream dynamic pressure (Pa)
 # Load Excel data (sensor positions)
 excel_data = pd.read_excel('DATA_ANALYSIS/PPS.xlsx', header=None)
 # Extract sensor positions from Column B, Row 3 to Row 51 (adjusting for zero-indexing)
-sensor_positions = excel_data.iloc[3:52, 1]  # Rows 3 to 51, Column B
+sensor_positions = excel_data.iloc[2:52, 1]  # Rows 2 to 51, Column B
 
 # Load text file data (angles of attack and pressure values)
 text_data = pd.read_csv('DATA_ANALYSIS/raw_2d.txt', sep="\t", header=None)
@@ -29,7 +29,7 @@ def calculate_cp(pressure, q_inf):
     return pressure / q_inf
 
 # Function to generate Cp vs Position graph for a given angle of attack
-def plot_cp_vs_position(angle):
+def plot_cp_vs_position(angle, split_point=None):
     # Debugging: Check if the requested angle is present
     print(f"Searching for angle: {angle}")
     
@@ -54,19 +54,37 @@ def plot_cp_vs_position(angle):
     # Calculate Cp values for each pressure
     cp_values = pressures_at_angle.apply(lambda p: calculate_cp(p, q_inf))
     
+    # Set the split point (choose somewhere near the middle or manually set)
+    if split_point is None:
+        split_point = len(sensor_positions) // 2  # Default split at the midpoint of the array
+
     # Create the Cp vs Position plot
     plt.figure(figsize=(10, 6))
-    plt.plot(sensor_positions, cp_values, marker='o', linestyle='-', color='b')
+
+    # Plot the first part of the data (from start to split point)
+    plt.plot(sensor_positions[:split_point], cp_values[:split_point], marker='o', linestyle='-', color='b')
+
+    # Plot the second part of the data (from split point to end)
+    plt.plot(sensor_positions[split_point:], cp_values[split_point:], marker='o', linestyle='-', color='b')
+
     plt.title(f'Cp vs Position for Angle of Attack = {angle}°')
-    plt.xlabel('Sensor Position (m)')
+    plt.xlabel('Sensor Position (%)')
     plt.ylabel('Cp (Coefficient of Pressure)')
     
     # Customize x-axis with specified ticks
     plt.xticks(ticks=range(0, 101, 10))  # Custom x-ticks from 0 to 100 with a step of 10
     plt.xlim(0, 100)  # Set x-axis limits to 0-100 for better readability
-    
+
+    # Apply a transformation to the x-axis labels (divide by 100) and format with decimals
+    current_ticks = plt.gca().get_xticks()
+    plt.gca().set_xticklabels([f'{x/100:.1f}' for x in current_ticks])
+
     plt.grid(True)
+    
+    # Add the legend to show the angle of attack
+    plt.legend([f'Angle of Attack = {angle}°'])
+
     plt.show()
 
-# Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees)
-plot_cp_vs_position(5)
+# Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees) and split point
+plot_cp_vs_position(5, split_point=25)  # Try changing the split_point value to test different splits
