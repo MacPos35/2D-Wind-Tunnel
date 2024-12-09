@@ -1,57 +1,72 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Define the path to your text file and Excel file
-text_file_path = 'DATA_ANALYSIS/raw_2d.txt'
-excel_file_path = 'DATA_ANALYSIS/PPS.xlsx'
+# Constants
+q_inf = 335.7613443  # Free-stream dynamic pressure (Pa)
 
-# Load the tab-separated text file with two header rows
-data = pd.read_csv(text_file_path, sep='\t', header=2)
+# Load Excel data (sensor positions)
+excel_data = pd.read_excel('DATA_ANALYSIS/PPS.xlsx', header=None)
+# Extract sensor positions from Column B, Row 3 to Row 51 (adjusting for zero-indexing)
+sensor_positions = excel_data.iloc[3:52, 1]  # Rows 3 to 51, Column B
 
-# Preview the first few rows of the data to check if it's correctly loaded
-print(data.head())
+# Load text file data (angles of attack and pressure values)
+text_data = pd.read_csv('DATA_ANALYSIS/raw_2d.txt', sep="\t", header=None)
 
-# Load the sensor locations from the Excel file using index (column index 1 corresponds to 'B')
-sensor_data = pd.read_excel(excel_file_path, header=2, usecols=[1])  # Column 'B' corresponds to index 1
-sensor_locations = sensor_data.iloc[:, 0]  # Extract the data from the first column
+# Extract angles of attack (starting from Column 3, Row 3 in text file)
+angles_of_attack = text_data.iloc[2:, 2]  # Extract from Row 3, Column 3 onwards
 
-# Print the sensor locations to verify
-print(sensor_locations)
+# Convert angles of attack to numeric (to avoid any string/float issues)
+angles_of_attack = pd.to_numeric(angles_of_attack, errors='coerce')
 
-q_inf = 335.7613443  # Pa (reference pressure)
+# Extract pressure values (Columns 9 to 57 starting from Row 3 in text file)
+pressure_values = text_data.iloc[2:, 8:57]  # Extract from Columns 9 to 57, Row 3 onwards
 
-# Specify the angle of attack you want to analyze (e.g., 5 degrees)
-angle_of_attack = 5
+# Ensure pressure values are numeric
+pressure_values = pressure_values.apply(pd.to_numeric, errors='coerce')
 
-# Filter the data for the specified angle of attack (angle of attack is in column 3 of the text file, which is index 2)
-filtered_data = data[data.iloc[:, 2] == angle_of_attack]
+# Function to calculate Cp from pressure using q_inf
+def calculate_cp(pressure, q_inf):
+    return pressure / q_inf
 
-# Extract pressure values from columns 9 to 57 (which correspond to P001 to P049)
-pressure_values = filtered_data.iloc[:, 8:57]  # Columns 9 to 57 (index starts from 0)
+# Function to generate Cp vs Position graph for a given angle of attack
+def plot_cp_vs_position(angle):
+    # Debugging: Check if the requested angle is present
+    print(f"Searching for angle: {angle}")
+    
+    # Find the row where the angle of attack matches
+    matching_rows = angles_of_attack[angles_of_attack == angle]
+    
+    if matching_rows.empty:
+        print(f"Error: Angle of attack {angle} not found.")
+        return
 
-# Compute Cp for each sensor
-Cp_values = pressure_values / q_inf
+    # Get the row index where the angle of attack matches
+    angle_row = matching_rows.index[0]
+    
+    # Extract the pressure values for the corresponding angle
+    pressures_at_angle = pressure_values.iloc[angle_row - 2]  # Adjust for zero-based index
+    
+    # Ensure the length of pressures_at_angle matches the number of sensor positions
+    if len(pressures_at_angle) != len(sensor_positions):
+        print(f"Warning: Pressure values length ({len(pressures_at_angle)}) doesn't match sensor positions length ({len(sensor_positions)}).")
+        return
+    
+    # Calculate Cp values for each pressure
+    cp_values = pressures_at_angle.apply(lambda p: calculate_cp(p, q_inf))
+    
+    # Create the Cp vs Position plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(sensor_positions, cp_values, marker='o', linestyle='-', color='b')
+    plt.title(f'Cp vs Position for Angle of Attack = {angle}°')
+    plt.xlabel('Sensor Position (m)')
+    plt.ylabel('Cp (Coefficient of Pressure)')
+    
+    # Customize x-axis with specified ticks
+    plt.xticks(ticks=range(0, 101, 10))  # Custom x-ticks from 0 to 100 with a step of 10
+    plt.xlim(0, 100)  # Set x-axis limits to 0-100 for better readability
+    
+    plt.grid(True)
+    plt.show()
 
-# Add the Cp values to the filtered data
-filtered_data = filtered_data.join(Cp_values)
-
-# Check the resulting data
-print(filtered_data[['xcords', 'Alpha'] + list(pressure_values.columns)])
-
-# Plot Cp vs. sensor location
-plt.figure(figsize=(10, 6))
-
-# Loop through each column of Cp values (P001 to P049) and plot
-for sensor in Cp_values.columns:
-    plt.plot(sensor_locations, filtered_data[sensor], label=sensor)
-
-# Set plot labels and title
-plt.title(f'Pressure Coefficient Distribution at {angle_of_attack}° Angle of Attack')
-plt.xlabel('Normalized Chord Position (x/c)')
-plt.ylabel('Pressure Coefficient (C_p)')
-plt.grid(True)
-
-# Add a legend
-plt.legend(title='Sensors', bbox_to_anchor=(1.05, 1), loc='upper left')  # To handle the legend outside the plot
-plt.tight_layout()  # To avoid clipping of labels
-plt.show()
+# Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees)
+plot_cp_vs_position(5)
