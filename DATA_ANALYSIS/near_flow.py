@@ -9,6 +9,7 @@ q_inf = 335.7613443  # Free-stream dynamic pressure (Pa)
 excel_data = pd.read_excel('DATA_ANALYSIS/PPS.xlsx', header=None)
 # Extract sensor positions from Column B, Row 3 to Row 51 (adjusting for zero-indexing)
 sensor_positions = excel_data.iloc[2:52, 1]  # Rows 2 to 51, Column B
+sensor_positions_y = excel_data.iloc[2:52, 2]
 
 # Load text file data (angles of attack and pressure values)
 text_data = pd.read_csv('DATA_ANALYSIS/raw_2d.txt', sep="\t", header=None)
@@ -90,14 +91,15 @@ def plot_cp_vs_position(angle, split_point=None):
 
     plt.show()
 
-    cp_positive = np.where(cp_values > 0, cp_values, 0)
-    cp_negative = np.where(cp_values < 0, cp_values, 0)
+    cp_u = np.where(sensor_positions_y > 0, cp_values, 0)
+    cp_l = np.where(sensor_positions_y < 0, cp_values, 0)
 
-    area_positive = np.trapz(cp_positive, x_positions)
-    area_negative = np.trapz(cp_negative, x_positions)
-    area_total = area_positive - area_negative
-    print(area_positive)
-    print(area_negative)
+    area_cpu = np.trapz(cp_u, x_positions)
+    area_cpl = np.trapz(cp_l, x_positions)
+    area_total = area_cpl - area_cpu
+    print(area_cpu)
+    print(area_cpl)
     print(area_total)
 # Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees) and split point
-plot_cp_vs_position(5, split_point=25)  # Try changing the split_point value to test different splits
+plot_cp_vs_position(15, split_point=25)  # Try changing the split_point value to test different splits
+plot_cp_vs_position(14.5, split_point=25)
