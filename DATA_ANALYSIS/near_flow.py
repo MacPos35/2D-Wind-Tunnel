@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Constants
 q_inf = 335.7613443  # Free-stream dynamic pressure (Pa)
@@ -54,9 +55,12 @@ def plot_cp_vs_position(angle, split_point=None):
     # Calculate Cp values for each pressure
     cp_values = pressures_at_angle.apply(lambda p: calculate_cp(p, q_inf))
     
+    x_positions = sensor_positions/100.0
+
     # Set the split point (choose somewhere near the middle or manually set)
     if split_point is None:
         split_point = len(sensor_positions) // 2  # Default split at the midpoint of the array
+
 
     # Create the Cp vs Position plot
     plt.figure(figsize=(10, 6))
@@ -86,5 +90,13 @@ def plot_cp_vs_position(angle, split_point=None):
 
     plt.show()
 
+    cp_positive = np.where(cp_values > 0, cp_values, 0)
+    cp_negative = np.where(cp_values < 0, cp_values, 0)
+
+    area_positive = np.trapz(cp_positive, x_positions)
+    area_negative = np.trapz(cp_negative, x_positions)
+
+    print(area_positive)
+    print(area_negative)
 # Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees) and split point
-plot_cp_vs_position(16, split_point=25)  # Try changing the split_point value to test different splits
+plot_cp_vs_position(10, split_point=25)  # Try changing the split_point value to test different splits
