@@ -6,17 +6,17 @@ from scipy.integrate import quad
 file_path = 'DATA_ANALYSIS/wake_velocities.xlsx'
 data = pd.read_excel(file_path, header=2)
 
-# Clean and process the data
-print(data.columns)
-spanwise_locations = [col for col in data.columns if not pd.isnull(col) and col != 'Alpha (degrees)']
+# Extract AoA values and spanwise locations
+aoa_column = 'Location (mm)'  # The first column contains AoA values
+aoa_values = data[aoa_column][1:35]  # Exclude the header row
+spanwise_locations = [col for col in data.columns if col != aoa_column]  # All other columns are spanwise locations
 
-aoa_values = data['Alpha (degrees)'][1:]  # Extract AoA values (skip header row)
-
-# Extract spanwise location in mm and convert to float for integration
+# Convert the spanwise locations to numeric for integration
 spanwise_locations = list(map(float, spanwise_locations))
 
 # Create a dictionary of velocity profiles for each AoA
-velocity_profiles = data.iloc[1:, 1:].set_index(data['Alpha (degrees)'][1:])
+velocity_profiles = data.iloc[1:, 1:].set_index(data[aoa_column][1:])
+
 
 # Define constants
 rho = 1.225  # Air density, replace with actual value
@@ -35,13 +35,19 @@ def calculate_drag(aoa):
         """
         Calculate the first term of the drag integral over a segment.
         """
-        location_index_start = np.abs(np.array(spanwise_locations) - location_start).argmin()
-        location_index_end = np.abs(np.array(spanwise_locations) - location_end).argmin()
+        # Find the nearest spanwise location for the start and end of the segment
+        location_start_idx = np.abs(np.array(spanwise_locations) - location_start).argmin()
+        location_end_idx = np.abs(np.array(spanwise_locations) - location_end).argmin()
 
-        U_start = velocity_profile.iloc[location_index_start]
-        U_end = velocity_profile.iloc[location_index_end]
+        print(velocity_profile)
+        print(location_start_idx, location_end_idx)
+        print(velocity_profile.iloc[location_start_idx])
+        # Extract the corresponding velocity values as floats
+        U_start = float(velocity_profile.iloc[location_start_idx])
+        U_end = float(velocity_profile.iloc[location_end_idx])
+
+        # Return the integrand value
         return (U_infinity() - U_start) * U_end
-
     total_drag = 0
     for i in range(len(spanwise_locations) - 1):
         location_start = spanwise_locations[i]
