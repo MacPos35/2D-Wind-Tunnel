@@ -8,7 +8,7 @@ data = pd.read_excel(file_path, header=2)
 
 # Extract AoA values and spanwise locations
 aoa_column = 'Location (mm)'  # The first column contains AoA values
-aoa_values = data[aoa_column][1:35]  # Exclude the header row
+aoa_values = data[aoa_column][1:]  # Exclude the header row
 spanwise_locations = [col for col in data.columns if col != aoa_column]  # All other columns are spanwise locations
 
 # Convert the spanwise locations to numeric for integration
@@ -39,9 +39,9 @@ def calculate_drag(aoa):
         location_start_idx = np.abs(np.array(spanwise_locations) - location_start).argmin()
         location_end_idx = np.abs(np.array(spanwise_locations) - location_end).argmin()
 
-        print(velocity_profile)
-        print(location_start_idx, location_end_idx)
-        print(velocity_profile.iloc[location_start_idx])
+        #print(velocity_profile)
+        #print(location_start_idx, location_end_idx)
+        #print(velocity_profile.iloc[location_start_idx])
         # Extract the corresponding velocity values as floats
         U_start = float(velocity_profile.iloc[location_start_idx])
         U_end = float(velocity_profile.iloc[location_end_idx])
@@ -58,7 +58,7 @@ def calculate_drag(aoa):
     return total_drag
 
 # Iterate over AoAs and compute drag
-aoa_range = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14] 
+aoa_range = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16] 
 drag_results = [(aoa, calculate_drag(aoa)) for aoa in aoa_range]
 
 # Output the results
