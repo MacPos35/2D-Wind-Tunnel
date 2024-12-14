@@ -3,11 +3,13 @@ import numpy as np
 from scipy.integrate import quad
 
 # Load the Excel sheet provided by the user
-file_path = '/DATA_ANALYSIS/wake_velocities.xlsx'
+file_path = 'DATA_ANALYSIS/wake_velocities.xlsx'
 data = pd.read_excel(file_path, header=2)
 
 # Clean and process the data
+print(data.columns)
 spanwise_locations = [col for col in data.columns if not pd.isnull(col) and col != 'Alpha (degrees)']
+
 aoa_values = data['Alpha (degrees)'][1:]  # Extract AoA values (skip header row)
 
 # Extract spanwise location in mm and convert to float for integration
