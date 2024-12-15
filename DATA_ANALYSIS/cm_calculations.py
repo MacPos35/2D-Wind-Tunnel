@@ -65,7 +65,7 @@ def cm_calc(angle, split_point=None):
 
     area_cpu_x = np.trapz(cp_u * x_positions, x_positions)
     area_cpl_x = np.trapz(cp_l * x_positions, x_positions)
-    area_total = area_cpl_x - area_cpu_x
+    area_total = area_cpu_x - area_cpl_x
     print(area_cpu_x)
     print(area_cpl_x)
     print(area_total)
