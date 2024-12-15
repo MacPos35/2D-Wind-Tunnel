@@ -31,6 +31,7 @@ def calculate_cp(pressure, q_inf):
     return pressure / q_inf
 
 # Function to generate Cp vs Position graph for a given angle of attack
+# Function to generate Cp vs Position graph for a given angle of attack
 def plot_cp_vs_position(angle, split_point=None):
     # Debugging: Check if the requested angle is present
     print(f"Searching for angle: {angle}")
@@ -54,71 +55,93 @@ def plot_cp_vs_position(angle, split_point=None):
         return
     
     # Calculate Cp values for each pressure
-    cp_values = pressures_at_angle.apply(lambda p: calculate_cp(p, q_inf))
-    
-    x_positions = sensor_positions/100.0
+    cp_values = pressures_at_angle.apply(lambda p: calculate_cp(p, q_inf)).to_numpy()  # Convert to numpy array
+    sensor_positions_np = sensor_positions.to_numpy()  # Convert positions to numpy array
 
     # Set the split point (choose somewhere near the middle or manually set)
-    if split_point is None:
+    if split_point is None or split_point >= len(sensor_positions):
         split_point = len(sensor_positions) // 2  # Default split at the midpoint of the array
 
+    # Ensure that the split point is a valid index
+    split_point = min(max(0, split_point), len(sensor_positions) - 1)
+
+    # Split data into two parts for plotting
+    positions_part1 = sensor_positions_np[:split_point]
+    positions_part2 = sensor_positions_np[split_point:]
+    cp_part1 = cp_values[:split_point]
+    cp_part2 = cp_values[split_point:]
 
     # Create the Cp vs Position plot
     plt.figure(figsize=(10, 6))
 
-    # Plot the first part of the data (from start to split point)
-    plt.plot(sensor_positions[:split_point], cp_values[:split_point], marker='o', linestyle='-', color='b')
+    # Plot the first part of the data
+    plt.plot(positions_part1, cp_part1, marker='o', linestyle='-', color='b', label='Cp curve')
 
-    # Plot the second part of the data (from split point to end)
-    plt.plot(sensor_positions[split_point:], cp_values[split_point:], marker='o', linestyle='-', color='b')
+    # Plot the second part of the data
+    plt.plot(positions_part2, cp_part2, marker='o', linestyle='-', color='b')
+
+    # Connect point 1 and point 26
+    plt.plot(
+        [sensor_positions_np[0], sensor_positions_np[25]],  # x-coordinates of points
+        [cp_values[0], cp_values[25]],  # y-coordinates of points
+        linestyle='-', color='b'
+    )
 
     plt.title(f'Cp vs Position for Angle of Attack = {angle}°, Re = 2.5e5')
     plt.xlabel('Sensor Position (x/c) [%]')
     plt.ylabel('Cp (Coefficient of Pressure) [~]')
-    
-    # Customize x-axis with specified ticks
-    plt.xticks(ticks=range(0, 101, 10))  # Custom x-ticks from 0 to 100 with a step of 10
-    plt.xlim(0, 100)  # Set x-axis limits to 0-100 for better readability
 
-    # Apply a transformation to the x-axis labels (divide by 100) and format with decimals
-    current_ticks = plt.gca().get_xticks()
-    plt.gca().set_xticklabels([f'{x/100:.1f}' for x in current_ticks])
+    # Calculate limits with added margin
+    x_min, x_max = sensor_positions_np.min(), sensor_positions_np.max()
+    y_min, y_max = cp_values.min(), cp_values.max()
+
+    x_margin = (x_max - x_min) * 0.05  # 5% margin for x
+    y_margin = (y_max - y_min) * 0.05  # 5% margin for y
+
+    plt.xlim(x_min - x_margin, x_max + x_margin)
+    plt.ylim(y_min - y_margin, y_max + y_margin)
+
+    # Invert the y-axis for Cp plots
     plt.gca().invert_yaxis()
-    plt.grid(True)
-    
-    # Adjust the spines to place the x-axis in the middle
-    ax = plt.gca()
-    ax.spines['bottom'].set_position(('data', 0))  # Move the bottom spine to y=0
-    ax.spines['left'].set_position(('data', 0))    # Move the left spine to x=0
 
-    # Remove the top and right spines
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+    # Add grid and spines for better visualization
+    plt.grid(True)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(True)
+    ax.spines['right'].set_visible(True)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(True)
 
     # Adjust tick positions
     ax.xaxis.set_ticks_position('bottom')  # Place x-ticks on the bottom spine
     ax.yaxis.set_ticks_position('left')    # Place y-ticks on the left spine
-    ax.tick_params(axis='x', which='both', direction='inout')  # Make x-ticks point inward/outward
-    ax.tick_params(axis='y', which='both', direction='inout')  # Make y-ticks point inward/outward
 
+    # Add the legend
+    plt.legend()
     
-    # Add the legend to show the angle of attack
-    plt.legend([f'Angle of Attack = {angle}°'])
-    # Add arrows for axes
-    plt.annotate('', xy=(100, 0), xytext=(0, 0), arrowprops=dict(facecolor='black', arrowstyle='->'), fontsize=12)
-    plt.annotate('', xy=(0, max(cp_values) * 1.1), xytext=(0, min(cp_values) * 1.1), arrowprops=dict(facecolor='black', arrowstyle='->'), fontsize=12)
-
+    # Show the plot
     plt.show()
 
+    # Calculate areas under the curve
     cp_u = np.where(sensor_positions_y > 0, cp_values, 0)
     cp_l = np.where(sensor_positions_y < 0, cp_values, 0)
+    x_positions = sensor_positions / 100.0  # Convert sensor positions to x/c
 
     area_cpu = np.trapz(cp_u, x_positions)
     area_cpl = np.trapz(cp_l, x_positions)
     area_total = area_cpl - area_cpu
-    print(area_cpu)
-    print(area_cpl)
-    print(area_total)
+
+    print("Area Cp Upper:", area_cpu)
+    print("Area Cp Lower:", area_cpl)
+    print("Total Area:", area_total)
+
+
+
+
+
 # Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees) and split point
-plot_cp_vs_position(5, split_point=25)  # Try changing the split_point value to test different splits
-plot_cp_vs_position(14.5, split_point=25)
+plot_cp_vs_position(-5, split_point=25)  # Try changing the split_point value to test different splits
+plot_cp_vs_position(0, split_point=25)
+plot_cp_vs_position(5, split_point=25)
+plot_cp_vs_position(10, split_point=25)
+plot_cp_vs_position(15, split_point=25)
