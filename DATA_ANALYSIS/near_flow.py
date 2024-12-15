@@ -72,9 +72,9 @@ def plot_cp_vs_position(angle, split_point=None):
     # Plot the second part of the data (from split point to end)
     plt.plot(sensor_positions[split_point:], cp_values[split_point:], marker='o', linestyle='-', color='b')
 
-    plt.title(f'Cp vs Position for Angle of Attack = {angle}°')
-    plt.xlabel('Sensor Position (%)')
-    plt.ylabel('Cp (Coefficient of Pressure)')
+    plt.title(f'Cp vs Position for Angle of Attack = {angle}°, Re = 2.5e5')
+    plt.xlabel('Sensor Position (x/c) [%]')
+    plt.ylabel('Cp (Coefficient of Pressure) [~]')
     
     # Customize x-axis with specified ticks
     plt.xticks(ticks=range(0, 101, 10))  # Custom x-ticks from 0 to 100 with a step of 10
@@ -86,8 +86,27 @@ def plot_cp_vs_position(angle, split_point=None):
     plt.gca().invert_yaxis()
     plt.grid(True)
     
+    # Adjust the spines to place the x-axis in the middle
+    ax = plt.gca()
+    ax.spines['bottom'].set_position(('data', 0))  # Move the bottom spine to y=0
+    ax.spines['left'].set_position(('data', 0))    # Move the left spine to x=0
+
+    # Remove the top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Adjust tick positions
+    ax.xaxis.set_ticks_position('bottom')  # Place x-ticks on the bottom spine
+    ax.yaxis.set_ticks_position('left')    # Place y-ticks on the left spine
+    ax.tick_params(axis='x', which='both', direction='inout')  # Make x-ticks point inward/outward
+    ax.tick_params(axis='y', which='both', direction='inout')  # Make y-ticks point inward/outward
+
+    
     # Add the legend to show the angle of attack
     plt.legend([f'Angle of Attack = {angle}°'])
+    # Add arrows for axes
+    plt.annotate('', xy=(100, 0), xytext=(0, 0), arrowprops=dict(facecolor='black', arrowstyle='->'), fontsize=12)
+    plt.annotate('', xy=(0, max(cp_values) * 1.1), xytext=(0, min(cp_values) * 1.1), arrowprops=dict(facecolor='black', arrowstyle='->'), fontsize=12)
 
     plt.show()
 
@@ -101,5 +120,5 @@ def plot_cp_vs_position(angle, split_point=None):
     print(area_cpl)
     print(area_total)
 # Example: Plot Cp vs Position for a specific angle of attack (e.g., 5 degrees) and split point
-plot_cp_vs_position(15, split_point=25)  # Try changing the split_point value to test different splits
+plot_cp_vs_position(5, split_point=25)  # Try changing the split_point value to test different splits
 plot_cp_vs_position(14.5, split_point=25)
