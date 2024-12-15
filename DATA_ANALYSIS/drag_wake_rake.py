@@ -17,43 +17,69 @@ spanwise_locations = list(map(float, spanwise_locations))
 # Create a dictionary of velocity profiles for each AoA
 velocity_profiles = data.iloc[1:, 1:].set_index(data[aoa_column][1:])
 
+# Load the Excel sheet provided by the user pressures
+file_path = 'DATA_ANALYSIS/wake_pressures.xlsx'
+data = pd.read_excel(file_path, header=2)
+
+# Extract AoA values and spanwise locations
+aoa_column_p = 'Location (mm)'  # The first column contains AoA values
+aoa_values_p = data[aoa_column][1:]  # Exclude the header row
+spanwise_locations_p = [col for col in data.columns if col != aoa_column]  # All other columns are spanwise locations
+
+# Convert the spanwise locations to numeric for integration
+spanwise_locations_p = list(map(float, spanwise_locations_p))
+
+# Create a dictionary of pressure profiles for each AoA
+pressure_profiles = data.iloc[1:, 1:].set_index(data[aoa_column][1:])
 
 # Define constants
-rho = 1.225  # Air density, replace with actual value
+rho = 1.181615446 # Air density, replace with actual value
 
 # Function to calculate drag for a given AoA
 def calculate_drag(aoa):
     velocity_profile = velocity_profiles.loc[aoa]
+    pressure_profile = pressure_profiles.loc[aoa]
 
     def U_infinity():
-        return 23.8392323  # Freestream velocity, replace with actual value
+        return 23.8392323  # Freestream velocity (m/s)
 
     def p_infinity():
-        return 100189.3662  # Freestream pressure, replace with actual value
+        return 99831.30769  # Freestream pressure (Pa)
 
-    def first_term(y, location_start, location_end):
-        """
-        Calculate the first term of the drag integral over a segment.
-        """
-        # Find the nearest spanwise location for the start and end of the segment
+    def first_term(location_start, location_end):
+        # Find the nearest spanwise location indices
         location_start_idx = np.abs(np.array(spanwise_locations) - location_start).argmin()
         location_end_idx = np.abs(np.array(spanwise_locations) - location_end).argmin()
 
-        #print(velocity_profile)
-        #print(location_start_idx, location_end_idx)
-        #print(velocity_profile.iloc[location_start_idx])
-        # Extract the corresponding velocity values as floats
+        # Extract velocities at segment bounds
         U_start = float(velocity_profile.iloc[location_start_idx])
         U_end = float(velocity_profile.iloc[location_end_idx])
 
-        # Return the integrand value
-        return (U_infinity() - U_start) * U_end
+        # Average velocity over the segment and return the momentum integrand
+        return (U_infinity() - ((U_start + U_end) / 2)) * ((U_start + U_end) / 2) * (location_end - location_start)
+
+    def second_term(location_start, location_end):
+        # Find the nearest spanwise location indices
+        location_start_idx = np.abs(np.array(spanwise_locations_p) - location_start).argmin()
+        location_end_idx = np.abs(np.array(spanwise_locations_p) - location_end).argmin()
+
+        # Extract pressures at segment bounds
+        p_start = float(pressure_profile.iloc[location_start_idx])
+        p_end = float(pressure_profile.iloc[location_end_idx])
+
+        # Approximate pressure integral using trapezoidal rule
+        return ((p_infinity() - ((p_start + p_end) / 2)) * (location_end - location_start))
+
+    # Compute total drag
     total_drag = 0
     for i in range(len(spanwise_locations) - 1):
         location_start = spanwise_locations[i]
         location_end = spanwise_locations[i + 1]
-        segment_drag = quad(first_term, location_start, location_end, args=(location_start, location_end))[0]
-        total_drag += rho * segment_drag
+
+        # Compute contributions from both terms
+        segment_drag = rho * first_term(location_start, location_end)
+        pressure_drag = second_term(location_start, location_end)
+        total_drag += segment_drag + pressure_drag
 
     return total_drag
 
